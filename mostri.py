@@ -4,13 +4,6 @@ class Entity:
     self.y = y
     self.field = field
     self.field.entities.append(self)
-    
-class Monster(Entity):
-  def __init__(self, x, y, name, damage, field):
-    super().__init__(x, y, field)
-    self.name = name
-    self.hp = 10
-    self.damage = damage
   
   def move(self, direction):
     casella_vuota = True
@@ -49,6 +42,15 @@ class Monster(Entity):
     else:
       print("Il mostro",self.name,"tenta invano di uscire dall'arena.")
 
+      
+class Monster(Entity):
+  def __init__(self, x, y, name, damage, field):
+    super().__init__(x, y, field)
+    self.name = name
+    self.hp = 10
+    self.damage = damage
+  
+  
   def info(self):
     print("Sono", self.name, "ho ", self.hp, "/10 hp", "e mi trovo a", self.x, ",", self.y)
 
