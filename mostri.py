@@ -1,3 +1,5 @@
+import os
+import random
 class Entity: 
   def __init__(self, x, y, field):
     self.x = x
@@ -5,72 +7,79 @@ class Entity:
     self.field = field
     self.field.entities.append(self)
   
-  def move(self, direction):
-    casella_vuota = True
-    if direction == "up" and self.y >= 1:
-      for e in field.entities:
-        if self.x == e.x and self.y-1 == e.y:
-          casella_vuota = False
-          print("La casella è occupata")      
-      if casella_vuota:
-        self.y -= 1
-    
-    elif direction == "down" and self.y <= field.h-2:
-      for e in field.entities:
-        if self.x == e.x and self.y+1 == e.y:
-          casella_vuota = False      
-          print("La casella è occupata")
-      if casella_vuota:
-        self.y += 1
-    
-    elif direction == "left" and self.x >= 1:
-      for e in field.entities:
-        if self.x-1 == e.x and self.y == e.y:
-          casella_vuota = False
-          print("La casella è occupata")      
-      if casella_vuota:
-        self.x -= 1
-    
-    elif direction == "right" and self.x <= field.w-2:
-      for e in field.entities:
-        if self.x+1 == e.x and self.y == e.y:
-          casella_vuota = False
-          print("La casella è occupata")      
-      if casella_vuota:
-        self.x += 1
-    
-    else:
-      print("Il mostro",self.name,"tenta invano di uscire dall'arena.")
+  def attack(self, enemy):
+    if self.hp <= 0:
+      print(self.name, "prova ad attaccare da morto con scarsi risultati")
+    else: 
+      print(self.name, "attacca", enemy.name)
 
-      
+      if (enemy.hp <= 0):
+        print(enemy.name, "e' morto")
+        self.field.entities.remove(enemy)
+      else:
+        enemy.hp -= self.damage
+
+  def move(self, direction):
+    futureX = self.x
+    futureY = self.y
+
+    if direction == "up" and self.y > 0:
+      futureY -= 1
+    elif direction == "down" and self.y < self.field.h - 1:
+      futureY += 1
+    elif direction == "left" and self.x > 0:
+      futureX -= 1
+    elif direction == "right" and self.x < self.field.w - 1:
+      futureX += 1
+
+    e = self.field.get_entity_at_coords(futureX, futureY)
+
+    if e == None:
+      self.x = futureX
+      self.y = futureY
+    else:
+      self.collide(e)
+
+  def collide(self, entity):
+    attack()
+    
+
 class Monster(Entity):
-  def __init__(self, x, y, name, damage, field):
+  def __init__(self, x, y, name, hp, damage, field):
     super().__init__(x, y, field)
     self.name = name
-    self.hp = 10
+    self.hp = hp
     self.damage = damage
-  
-  
+
   def info(self):
-    print("Sono", self.name, "ho ", self.hp, "/10 hp", "e mi trovo a", self.x, ",", self.y)
-
-  def attack(self, enemy):
-        if self.hp <= 0:
-            print("Il fantasma di", self.name, "prova ad attaccare invano.")
-        else: 
-            print(self.name, "attacca", enemy.name)
-
-        if (enemy.hp <= 0):
-            print(enemy.name, "e' morto.")
-        else:
-            enemy.hp -= self.damage
+    print("sono", self.name, "hp:", self.hp, "/10", "e mi trovo a", self.x, ",", self.y)
+  
+  def collide(self, entity):
+    self.attack(entity)
+  
+  def movement(self, n):
+      if n == 1:
+          self.move("up")
+      if n == 2:
+          self.move("down")
+      if n == 3:
+          self.move("right")
+      if n == 4:
+          self.move("left")
 
 class Field:
   def __init__(self):
-    self.w= 10
-    self.h = 10
+    self.w = 5
+    self.h = 5
     self.entities = []
 
+  def get_entity_at_coords(self, x, y):
+    for e in self.entities:
+      if e.x == x and e.y == y:
+        return e
+
+    return None
+    
   def draw(self):
     for y in range(self.h):
       for x in range(self.w):
@@ -83,14 +92,28 @@ class Field:
       print()
 
 field = Field()
-m1 = Monster(2, 2, "Bulbasaur", 2, field)
-m2 = Monster(1, 1, "Charmander", 2, field)
-m1.info()
-m2.info()
-m1.info()
-m1.move("up")
-field.draw()
-m2.info()
-m1.move("left")
-field.draw()
+m1 = Monster(2, 2, "Lapras",5, 10, field)
+m2 = Monster(1, 1, "Bulbasaur",6, 10, field)
+p = Monster(0,0, "Player",9, 10, field)
 
+def clear_screen():
+  if os.name == "nt":
+    os.system("cls")
+  else:
+    os.system("clear")
+    
+clear_screen()
+
+while True:  
+  field.draw()
+
+  command = input("input: ").lower()
+  clear_screen()
+
+  if command == "q": break
+  elif command == "w": p.move("up")
+  elif command == "a": p.move("left")
+  elif command == "s": p.move("down")
+  elif command == "d": p.move("right")
+  m1.movement(random.randint(1,4))
+  m2.movement(random.randint(1,4))
