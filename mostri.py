@@ -1,23 +1,15 @@
 import os
-import random
+from random import choice
+
+DIRECTIONS = "up", "down", "left", "right"
+
 class Entity: 
-  def __init__(self, x, y, field):
+  def __init__(self, x, y, field, graphic):
     self.x = x
     self.y = y
     self.field = field
     self.field.entities.append(self)
-  
-  def attack(self, enemy):
-    if self.hp <= 0:
-      print(self.name, "prova ad attaccare da morto con scarsi risultati")
-    else: 
-      print(self.name, "attacca", enemy.name)
-
-      if (enemy.hp <= 0):
-        print(enemy.name, "e' morto")
-        self.field.entities.remove(enemy)
-      else:
-        enemy.hp -= self.damage
+    self.graphic = graphic
 
   def move(self, direction):
     futureX = self.x
@@ -32,6 +24,9 @@ class Entity:
     elif direction == "right" and self.x < self.field.w - 1:
       futureX += 1
 
+    if self.x == futureX and self.y == futureY:
+      return
+
     e = self.field.get_entity_at_coords(futureX, futureY)
 
     if e == None:
@@ -41,37 +36,75 @@ class Entity:
       self.collide(e)
 
   def collide(self, entity):
-    attack()
-    
+    pass
 
-class Monster(Entity):
-  def __init__(self, x, y, name, hp, damage, field):
-    super().__init__(x, y, field)
+  def update(self):
+    pass
+
+class Gold(Entity):
+  def __init__(self, x, y, field):
+    super().__init__(x, y, field, "$")
+    self.value = 100
+
+class Wall(Entity):
+  def __init__(self, x, y, field):
+    super().__init__(x, y, field, "#")
+
+class Living_Entity(Entity):
+  def __init__(self, x, y, name, hp, damage, field, graphic):
+    super().__init__(x, y, field, graphic)
     self.name = name
     self.hp = hp
+    self.max_hp = hp
     self.damage = damage
 
   def info(self):
-    print("sono", self.name, "hp:", self.hp, "/10", "e mi trovo a", self.x, ",", self.y)
+    print("sono", self.name, "hp:", self.hp, "/", self.max_hp, "e mi trovo a", self.x, ",", self.y)
+
+  def attack(self, enemy):
+    if self.hp <= 0:
+      print(self.name, "prova ad attaccare da morto con scarsi risultati")
+    else: 
+      print(self.name, "attacca", enemy.name)
+
+      if (enemy.hp <= 0):
+        print(enemy.name, "e' morto")
+        self.field.entities.remove(enemy)
+      else:
+        enemy.hp -= self.damage
+
+class Monster(Living_Entity):
+  def __init__(self, x, y, name, field):
+    super().__init__(x, y, name, 10, 5, field, "m")
+    
+  def collide(self, entity):
+    if isinstance(entity, Player):
+      self.attack(entity)
+  
+  def move(self):
+    super().move(choice(DIRECTIONS))
+
+  def update(self):
+    super().update()
+    self.move()
+
+class Player(Living_Entity):
+  def __init__(self, x, y, name, field):
+    super().__init__(x, y, name, 20, 5, field, "p")
   
   def collide(self, entity):
-    self.attack(entity)
-  
-  def movement(self, n):
-      if n == 1:
-          self.move("up")
-      if n == 2:
-          self.move("down")
-      if n == 3:
-          self.move("right")
-      if n == 4:
-          self.move("left")
+    if isinstance(entity, Monster):
+      self.attack(entity)
+    elif isinstance(entity, Gold):
+      self.field.score += entity.value
+      self.field.entities.remove(entity)
 
 class Field:
   def __init__(self):
     self.w = 5
     self.h = 5
     self.entities = []
+    self.score = 0
 
   def get_entity_at_coords(self, x, y):
     for e in self.entities:
@@ -81,20 +114,31 @@ class Field:
     return None
     
   def draw(self):
+    print("score:", self.score)
     for y in range(self.h):
       for x in range(self.w):
         for e in self.entities:
           if x == e.x and y == e.y:
-            print("[x]", end = "")
+            print("[" + e.graphic + "]", end = "")
             break    
         else:
           print("[ ]", end = "")
       print()
+  
+  def update(self):
+    for e in self.entities:
+      e.update()
 
 field = Field()
-m1 = Monster(2, 2, "Lapras",5, 10, field)
-m2 = Monster(1, 1, "Bulbasaur",6, 10, field)
-p = Monster(0,0, "Player",9, 10, field)
+m1 = Monster(2, 2, "Bulbasaur", field)
+m2 = Monster(1, 1, "Lapras", field)
+m3 = Monster(3, 1, "Charizard", field)
+g = Gold(3, 3, field)
+w = Wall(4, 4, field)
+w = Wall(3, 4, field)
+w = Wall(2, 4, field)
+w = Wall(2, 3, field)
+p = Player(0, 0, "Player", field)
 
 def clear_screen():
   if os.name == "nt":
@@ -103,8 +147,8 @@ def clear_screen():
     os.system("clear")
     
 clear_screen()
-
 while True:  
+  field.update()
   field.draw()
 
   command = input("input: ").lower()
@@ -115,5 +159,3 @@ while True:
   elif command == "a": p.move("left")
   elif command == "s": p.move("down")
   elif command == "d": p.move("right")
-  m1.movement(random.randint(1,4))
-  m2.movement(random.randint(1,4))
